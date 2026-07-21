@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ASP.NET Core MVC 4択クイズ</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f2f4f8;color:#20242b;font-family:"Yu Gothic","Meiryo",sans-serif}
+main{width:min(860px,calc(100% - 28px));margin:32px auto}
+.card{background:#fff;border:1px solid #d9dee7;border-radius:14px;padding:28px;box-shadow:0 8px 24px rgba(0,0,0,.08)}
+h1{margin:0 0 8px;font-size:28px}
+.note{margin:0 0 22px;color:#626b78;line-height:1.7}
+.status{display:flex;justify-content:space-between;gap:15px;font-weight:bold;margin-bottom:14px}
+.chapter{font-size:14px;color:#5d6b80;margin-bottom:8px}
+.question{font-size:21px;line-height:1.65;margin:0 0 20px}
+.choices{display:grid;gap:12px}
+.choice{width:100%;text-align:left;border:2px solid #d8dde6;background:#fff;border-radius:10px;padding:15px 16px;font-size:16px;line-height:1.5;cursor:pointer}
+.choice:hover:not(:disabled){background:#f6f8fb;border-color:#7185a6}
+.choice.correct{background:#e9f7ed;border-color:#2d8a49}
+.choice.wrong{background:#fceced;border-color:#bd4545}
+.choice:disabled{cursor:default}
+.feedback{display:none;margin-top:18px;padding:14px 16px;border-radius:10px;background:#f5f6f8;line-height:1.6}
+.feedback.show{display:block}
+.feedback strong{display:block;margin-bottom:4px}
+.actions{display:flex;justify-content:flex-end;margin-top:18px}
+.primary{border:0;border-radius:10px;padding:13px 22px;background:#2e4f80;color:#fff;font-size:16px;font-weight:bold;cursor:pointer}
+#nextBtn{display:none}
+.center{text-align:center}
+.big-score{font-size:48px;font-weight:bold;margin:20px 0 28px}
+@media(max-width:600px){.card{padding:20px}h1{font-size:23px}.question{font-size:18px}}
+</style>
+</head>
+<body>
+<main>
+<div class="card">
+<section id="start" class="center">
+<h1>ASP.NET Core MVC 4択クイズ</h1>
+<p class="note">Chapter1～4から全20問を出題します。<br>選択肢をクリックすると、その場で正解と解説を表示します。</p>
+<button class="primary" id="startBtn">クイズを始める</button>
+</section>
+
+<section id="quiz" hidden>
+<div class="status">
+<span id="progress">問題 1 / 20</span>
+<span id="score">正解数 0 / 0</span>
+</div>
+<div id="chapter" class="chapter"></div>
+<p id="question" class="question"></p>
+<div id="choices" class="choices"></div>
+<div id="feedback" class="feedback"></div>
+<div class="actions"><button class="primary" id="nextBtn">次の問題</button></div>
+</section>
+
+<section id="result" class="center" hidden>
+<h1>結果</h1>
+<div id="finalScore" class="big-score">0 / 20</div>
+<button class="primary" id="restartBtn">もう一度</button>
+</section>
+</div>
+</main>
+
+<script>
+const questions=[{"chapter": "Chapter1", "q": "「動的なページ」に関する説明はどれですか？", "choices": ["あらかじめ作成されたページをそのままブラウザに返す", "企業Webサイトなど更新頻度が低いページ", "リクエスト毎にデータベース等と連動してページを生成する", "サーバーサイドのプログラムを一切必要としない"], "a": 2, "e": "動的なページは、リクエストごとにデータベース等と連動して生成されます。"}, {"chapter": "Chapter1", "q": "資料に記載されている主なデータベース（RDBMS）に含まれないものはどれですか？", "choices": ["Microsoft SQL Server", "Oracle Database", "MySQL", "Visual Studio"], "a": 3, "e": "Visual Studioは開発ツールであり、RDBMSではありません。"}, {"chapter": "Chapter1", "q": "ASP.NET Coreの説明として誤っているものはどれですか？", "choices": ["高パフォーマンスなWeb開発フレームワークである", "Windows、Linux、macOSで動作するクロスプラットフォームである", "オープンソースとして提供されている", "Windows上でのみ動作するデスクトップアプリ専用ツールである"], "a": 3, "e": "ASP.NET Coreは、複数のOSで動作するWeb開発フレームワークです。"}, {"chapter": "Chapter1", "q": ".NET MAUIの説明として正しいものはどれですか？", "choices": ["Windows専用のデスクトップアプリ作成フレームワーク", "1つのソースコードでWindowsやスマホなど複数環境で動くアプリを開発できる", "データベースのクエリを高速化するツール", "HTMLタグを自動生成する機能"], "a": 1, "e": ".NET MAUIは、1つのコードをもとに複数環境向けのアプリを開発できます。"}, {"chapter": "Chapter1", "q": "MVCモデルにおいて、ユーザーからの入力を処理し、ModelとViewを調整する役割はどれですか？", "choices": ["Model", "View", "Controller", "Database"], "a": 2, "e": "Controllerがユーザー入力を処理し、ModelとViewを仲介します。"}, {"chapter": "Chapter2", "q": "Visual Studioで「プロパティウィンドウ」を表示するショートカットキーはどれですか？", "choices": ["F2", "F4", "F5", "F12"], "a": 1, "e": "プロパティウィンドウはF4で表示します。"}, {"chapter": "Chapter2", "q": "プログラムを「デバッグなしで実行」するショートカットキーはどれですか？", "choices": ["F5", "Ctrl + F5", "Shift + F5", "Alt + F5"], "a": 1, "e": "デバッグなしで実行する場合はCtrl + F5です。"}, {"chapter": "Chapter2", "q": "クラス名が「HelloController」の場合、ASP.NET Coreで認識されるコントローラー名はどれですか？", "choices": ["HelloController", "Controller", "Hello", "Hello_MVC"], "a": 2, "e": "末尾のControllerを除いたHelloがコントローラー名です。"}, {"chapter": "Chapter2", "q": "ルーティングパターン {controller=Home}/{action=Index}/{id?} の「?」は何を表しますか？", "choices": ["必須項目", "省略可能", "数値のみ", "暗号化"], "a": 1, "e": "?は、そのパラメーターが省略可能であることを示します。"}, {"chapter": "Chapter2", "q": "作成したマイグレーションを実際にデータベースへ適用するコマンドはどれですか？", "choices": ["Update-Database", "Apply-Migration", "Save-Changes", "Build-Database"], "a": 0, "e": "Update-Databaseでマイグレーションの内容をデータベースへ反映します。"}, {"chapter": "Chapter3", "q": "CRUDの正しい組み合わせはどれですか？", "choices": ["Create、Read、Update、Delete", "Check、Run、Undo、Debug", "Copy、Rename、Upload、Download", "Clear、Reset、Use、Done"], "a": 0, "e": "CRUDは作成・読み取り・更新・削除を表します。"}, {"chapter": "Chapter3", "q": "Scaffoldingコマンドの -m オプションが指定するものはどれですか？", "choices": ["出力先ディレクトリ", "使用するモデル名", "DbContext名", "非同期処理の有無"], "a": 1, "e": "-mは、生成のもとになるモデルを指定します。"}, {"chapter": "Chapter3", "q": "Scaffoldingコマンドの -dc オプションが指定するものはどれですか？", "choices": ["接続文字列", "デフォルトコントローラー", "データベースコンテキスト名", "データ変換規則"], "a": 2, "e": "-dcはDbContextを指定します。"}, {"chapter": "Chapter3", "q": "指定IDに一致する最初のレコードを非同期で取得するメソッドはどれですか？", "choices": ["AddAsync()", "FirstOrDefaultAsync()", "SelectAll()", "CheckExist()"], "a": 1, "e": "FirstOrDefaultAsync()は最初の一致要素を返し、見つからなければnullを返します。"}, {"chapter": "Chapter3", "q": "フォーム送信時のCSRFを防ぐために付与される属性はどれですか？", "choices": ["[HttpPost]", "[ValidateAntiForgeryToken]", "[Authorize]", "[Encrypted]"], "a": 1, "e": "[ValidateAntiForgeryToken]で、不正なサイトからのなりすまし送信を防ぎます。"}, {"chapter": "Chapter4", "q": "RazorテンプレートでC#の式をHTMLへ埋め込む基本記号はどれですか？", "choices": ["$", "#", "@", "&"], "a": 2, "e": "Razorでは@記号を使います。"}, {"chapter": "Chapter4", "q": "複数のC#文を記述するRazorコードブロックはどれですか？", "choices": ["@(...)", "@[ ... ]", "@{ ... }", "@* ... *@"], "a": 2, "e": "複数のC#文は@{ ... }の中へ記述します。"}, {"chapter": "Chapter4", "q": "ブラウザへ送信されないRazorのサーバー側コメントはどれですか？", "choices": ["<!-- ... -->", "// ...", "/* ... */", "@* ... *@"], "a": 3, "e": "Razorのサーバー側コメントは@* ... *@です。"}, {"chapter": "Chapter4", "q": "各ビューが処理される前に読み込まれ、共通レイアウトなどを設定するファイルはどれですか？", "choices": ["_Layout.cshtml", "_ViewImports.cshtml", "_ViewStart.cshtml", "appsettings.json"], "a": 2, "e": "_ViewStart.cshtmlは各ビューより前に読み込まれます。"}, {"chapter": "Chapter4", "q": "レイアウト内で各ページのメインコンテンツが埋め込まれる場所を指定するメソッドはどれですか？", "choices": ["@RenderSection()", "@RenderBody()", "@Html.Partial()", "@Inject()"], "a": 1, "e": "@RenderBody()が各ページのメインコンテンツを表示する場所です。"}];
+let current=0;
+let correct=0;
+let answered=false;
+
+const start=document.getElementById("start");
+const quiz=document.getElementById("quiz");
+const result=document.getElementById("result");
+const progress=document.getElementById("progress");
+const score=document.getElementById("score");
+const chapter=document.getElementById("chapter");
+const question=document.getElementById("question");
+const choices=document.getElementById("choices");
+const feedback=document.getElementById("feedback");
+const nextBtn=document.getElementById("nextBtn");
+
+function begin(){
+  current=0; correct=0; answered=false;
+  start.hidden=true; result.hidden=true; quiz.hidden=false;
+  showQuestion();
+}
+
+function showQuestion(){
+  answered=false;
+  const item=questions[current];
+  progress.textContent=`問題 ${current+1} / ${questions.length}`;
+  score.textContent=`正解数 ${correct} / ${current}`;
+  chapter.textContent=item.chapter;
+  question.textContent=item.q;
+  choices.innerHTML="";
+  feedback.className="feedback";
+  feedback.innerHTML="";
+  nextBtn.style.display="none";
+
+  item.choices.forEach((text,index)=>{
+    const btn=document.createElement("button");
+    btn.className="choice";
+    btn.textContent=`${String.fromCharCode(65+index)}. ${text}`;
+    btn.onclick=()=>checkAnswer(index,btn);
+    choices.appendChild(btn);
+  });
+}
+
+function checkAnswer(index,selected){
+  if(answered)return;
+  answered=true;
+  const item=questions[current];
+  const buttons=[...document.querySelectorAll(".choice")];
+  buttons.forEach(b=>b.disabled=true);
+
+  if(index===item.a){
+    correct++;
+    selected.classList.add("correct");
+    feedback.innerHTML=`<strong>正解です。</strong>${item.e}`;
+  }else{
+    selected.classList.add("wrong");
+    buttons[item.a].classList.add("correct");
+    feedback.innerHTML=`<strong>不正解です。正解は ${String.fromCharCode(65+item.a)} です。</strong>${item.e}`;
+  }
+
+  score.textContent=`正解数 ${correct} / ${current+1}`;
+  feedback.className="feedback show";
+  nextBtn.textContent=current===questions.length-1?"結果を見る":"次の問題";
+  nextBtn.style.display="inline-block";
+}
+
+function next(){
+  current++;
+  if(current>=questions.length){
+    quiz.hidden=true;
+    result.hidden=false;
+    document.getElementById("finalScore").textContent=`${correct} / ${questions.length}`;
+  }else{
+    showQuestion();
+  }
+}
+
+document.getElementById("startBtn").onclick=begin;
+document.getElementById("restartBtn").onclick=begin;
+nextBtn.onclick=next;
+</script>
+</body>
+</html>

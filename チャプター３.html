@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chapter3 4択クイズ</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f2f4f8;color:#20242b;font-family:"Yu Gothic","Meiryo",sans-serif}
+main{width:min(860px,calc(100% - 28px));margin:32px auto}
+.card{background:#fff;border:1px solid #d9dee7;border-radius:14px;padding:28px;box-shadow:0 8px 24px rgba(0,0,0,.08)}
+h1{margin:0 0 8px;font-size:28px}
+.note{margin:0 0 22px;color:#626b78;line-height:1.7}
+.status{display:flex;justify-content:space-between;gap:15px;font-weight:bold;margin-bottom:14px}
+.chapter{font-size:14px;color:#5d6b80;margin-bottom:8px}
+.question{font-size:21px;line-height:1.65;margin:0 0 20px}
+.choices{display:grid;gap:12px}
+.choice{width:100%;text-align:left;border:2px solid #d8dde6;background:#fff;border-radius:10px;padding:15px 16px;font-size:16px;line-height:1.5;cursor:pointer}
+.choice:hover:not(:disabled){background:#f6f8fb;border-color:#7185a6}
+.choice.correct{background:#e9f7ed;border-color:#2d8a49}
+.choice.wrong{background:#fceced;border-color:#bd4545}
+.choice:disabled{cursor:default}
+.feedback{display:none;margin-top:18px;padding:14px 16px;border-radius:10px;background:#f5f6f8;line-height:1.6}
+.feedback.show{display:block}
+.feedback strong{display:block;margin-bottom:4px}
+.actions{display:flex;justify-content:flex-end;margin-top:18px}
+.primary{border:0;border-radius:10px;padding:13px 22px;background:#2e4f80;color:#fff;font-size:16px;font-weight:bold;cursor:pointer}
+#nextBtn{display:none}
+.center{text-align:center}
+.big-score{font-size:48px;font-weight:bold;margin:20px 0 28px}
+@media(max-width:600px){.card{padding:20px}h1{font-size:23px}.question{font-size:18px}}
+</style>
+</head>
+<body>
+<main>
+<div class="card">
+<section id="start" class="center">
+<h1>Chapter3 4択クイズ</h1>
+<p class="note">Chapter3の問題を順番に出題します。<br>選択肢をクリックすると、その場で正解と解説を表示します。</p>
+<button class="primary" id="startBtn">クイズを始める</button>
+</section>
+
+<section id="quiz" hidden>
+<div class="status">
+<span id="progress"></span>
+<span id="score"></span>
+</div>
+<div class="chapter">Chapter3</div>
+<p id="question" class="question"></p>
+<div id="choices" class="choices"></div>
+<div id="feedback" class="feedback"></div>
+<div class="actions"><button class="primary" id="nextBtn">次の問題</button></div>
+</section>
+
+<section id="result" class="center" hidden>
+<h1>結果</h1>
+<div id="finalScore" class="big-score"></div>
+<button class="primary" id="restartBtn">もう一度</button>
+</section>
+</div>
+</main>
+
+<script>
+const questions=[{"q": "Scaffoldingの本来の意味として最も適切なものはどれですか？", "choices": ["建物の設計図", "建築現場の足場や骨組み", "データベースのバックアップ", "プログラムの最終完成品"], "a": 1, "e": "Scaffoldingは足場や骨組みを意味します。"}, {"q": "Scaffoldingを利用する最大の利点はどれですか？", "choices": ["開発者がコードを書かなくてよくなる", "常に最新のセキュリティ対策へ自動更新される", "基本コードを自動生成し、生産性を向上できる", "実行速度が手書きより格段に速くなる"], "a": 2, "e": "基本構造を自動生成できることが利点です。"}, {"q": "CRUDの正しい組み合わせはどれですか？", "choices": ["Create、Read、Update、Delete", "Check、Run、Undo、Debug", "Copy、Rename、Upload、Download", "Clear、Reset、Use、Done"], "a": 0, "e": "CRUDは作成・読取・更新・削除です。"}, {"q": "ターミナルからScaffoldingを実行する主要コマンドはどれですか？", "choices": ["dotnet run", "dotnet build", "dotnet aspnet-codegenerator", "dotnet tool update"], "a": 2, "e": "ASP.NET Coreのコード生成にはdotnet aspnet-codegeneratorを使います。"}, {"q": "Scaffoldingコマンドの-mオプションが指定するものはどれですか？", "choices": ["出力先ディレクトリ", "使用するモデル名", "DbContext名", "非同期処理の有無"], "a": 1, "e": "-mはモデルを指定します。"}, {"q": "Scaffoldingコマンドの-dcオプションが指定するものはどれですか？", "choices": ["接続文字列", "デフォルトコントローラー", "データベースコンテキスト名", "データ変換規則"], "a": 2, "e": "-dcはDbContextを指定します。"}, {"q": "非同期メソッドを使用したコントローラーを生成するオプションはどれですか？", "choices": ["-sync", "-await", "-async", "-task"], "a": 2, "e": "-asyncでasync/awaitを使うコードを生成します。"}, {"q": "BookモデルをScaffoldingした場合に生成されるコントローラーファイル名はどれですか？", "choices": ["Book.cs", "BooksController.cs", "BookAction.cs", "BooksView.cs"], "a": 1, "e": "通常、複数形+Controller.csになります。"}, {"q": "一覧表示用に生成されるビューファイル名はどれですか？", "choices": ["Create.cshtml", "Details.cshtml", "Index.cshtml", "List.cshtml"], "a": 2, "e": "一覧画面はIndex.cshtmlです。"}, {"q": "Task<IActionResult>の説明として正しいものはどれですか？", "choices": ["文字列だけを返す型", "非同期処理を待ち、最終的にアクション結果を返す型", "テーブルを直接表す型", "プログラムを終了させる型"], "a": 1, "e": "Task<T>は非同期完了を待ち、IActionResultを返します。"}, {"q": "Indexアクションでデータをリストとして非同期取得するメソッドはどれですか？", "choices": ["ToListAsync()", "WaitAsync()", "GetBooks()", "AsEnumerable()"], "a": 0, "e": "ToListAsync()で全データをリスト化します。"}, {"q": "Details(int? id)のように引数へ?を付ける理由は何ですか？", "choices": ["IDが必須であることを示す", "IDがnull許容型であることを示す", "IDが暗号化されていることを示す", "複数値を持つことを示す"], "a": 1, "e": "int?はnullable型です。"}, {"q": "HTTPリクエストのデータをアクションメソッドの引数へ自動割り当てする仕組みは何ですか？", "choices": ["モデルマッピング", "モデルバインド", "モデルバリデーション", "モデルスキャフォールド"], "a": 1, "e": "この仕組みをモデルバインドと呼びます。"}, {"q": "指定IDに一致する最初のレコードを非同期で取得するメソッドはどれですか？", "choices": ["AddAsync()", "FirstOrDefaultAsync()", "SelectAll()", "CheckExist()"], "a": 1, "e": "FirstOrDefaultAsync()は最初の一致要素を返し、なければnullです。"}, {"q": "オーバーポスティングを防ぐため、バインド対象のプロパティを限定する属性はどれですか？", "choices": ["[Limit]", "[Filter]", "[Bind]", "[Secure]"], "a": 2, "e": "[Bind]で対象プロパティを限定します。"}, {"q": "フォーム送信時のCSRFを防ぐために付与される属性はどれですか？", "choices": ["[HttpPost]", "[ValidateAntiForgeryToken]", "[Authorize]", "[Encrypted]"], "a": 1, "e": "ValidateAntiForgeryTokenで不正な送信を防ぎます。"}, {"q": "ModelState.IsValidは何を確認しますか？", "choices": ["DB接続が生きているか", "入力値がモデルの検証ルールに従っているか", "ログイン状態", "インターネット接続"], "a": 1, "e": "フォーム入力がバリデーションルールに合格しているか確認します。"}, {"q": "楽観的同時実行制御で競合時に発生する例外はどれですか？", "choices": ["NullReferenceException", "DbUpdateConcurrencyException", "SqlException", "FileNotFoundException"], "a": 1, "e": "競合時はDbUpdateConcurrencyExceptionが使われます。"}, {"q": "削除確認と実削除を同じDeleteという論理名で扱うために使う属性はどれですか？", "choices": ["[DeleteName]", "[ActionName(\"Delete\")]", "[MethodAlias]", "[ConfirmName]"], "a": 1, "e": "ActionName属性でルーティング上の名前を一致させます。"}, {"q": "一覧から詳細へIDを渡して遷移するTag Helperの正しい記述はどれですか？", "choices": ["<a href=\"/Details?id=@item.Id\">", "<a asp-action=\"Details\" asp-route-id=\"@item.Id\">", "<a link-to=\"Details\" val=\"@item.Id\">", "<a asp-controller=\"Books\" id=\"@item.Id\">"], "a": 1, "e": "asp-actionとasp-route-idを使います。"}];
+let current=0, correct=0, answered=false;
+const start=document.getElementById("start");
+const quiz=document.getElementById("quiz");
+const result=document.getElementById("result");
+const progress=document.getElementById("progress");
+const score=document.getElementById("score");
+const question=document.getElementById("question");
+const choices=document.getElementById("choices");
+const feedback=document.getElementById("feedback");
+const nextBtn=document.getElementById("nextBtn");
+
+function begin(){
+  current=0; correct=0; answered=false;
+  start.hidden=true; result.hidden=true; quiz.hidden=false;
+  showQuestion();
+}
+function showQuestion(){
+  answered=false;
+  const item=questions[current];
+  progress.textContent=`問題 ${current+1} / ${questions.length}`;
+  score.textContent=`正解数 ${correct} / ${current}`;
+  question.textContent=item.q;
+  choices.innerHTML="";
+  feedback.className="feedback";
+  feedback.innerHTML="";
+  nextBtn.style.display="none";
+  item.choices.forEach((text,index)=>{
+    const btn=document.createElement("button");
+    btn.className="choice";
+    btn.textContent=`${String.fromCharCode(65+index)}. ${text}`;
+    btn.onclick=()=>checkAnswer(index,btn);
+    choices.appendChild(btn);
+  });
+}
+function checkAnswer(index,selected){
+  if(answered)return;
+  answered=true;
+  const item=questions[current];
+  const buttons=[...document.querySelectorAll(".choice")];
+  buttons.forEach(b=>b.disabled=true);
+  if(index===item.a){
+    correct++;
+    selected.classList.add("correct");
+    feedback.innerHTML=`<strong>正解です。</strong>${item.e}`;
+  }else{
+    selected.classList.add("wrong");
+    buttons[item.a].classList.add("correct");
+    feedback.innerHTML=`<strong>不正解です。正解は ${String.fromCharCode(65+item.a)} です。</strong>${item.e}`;
+  }
+  score.textContent=`正解数 ${correct} / ${current+1}`;
+  feedback.className="feedback show";
+  nextBtn.textContent=current===questions.length-1?"結果を見る":"次の問題";
+  nextBtn.style.display="inline-block";
+}
+function next(){
+  current++;
+  if(current>=questions.length){
+    quiz.hidden=true;
+    result.hidden=false;
+    document.getElementById("finalScore").textContent=`${correct} / ${questions.length}`;
+  }else showQuestion();
+}
+document.getElementById("startBtn").onclick=begin;
+document.getElementById("restartBtn").onclick=begin;
+nextBtn.onclick=next;
+</script>
+</body>
+</html>

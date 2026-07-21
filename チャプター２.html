@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chapter2 4択クイズ</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f2f4f8;color:#20242b;font-family:"Yu Gothic","Meiryo",sans-serif}
+main{width:min(860px,calc(100% - 28px));margin:32px auto}
+.card{background:#fff;border:1px solid #d9dee7;border-radius:14px;padding:28px;box-shadow:0 8px 24px rgba(0,0,0,.08)}
+h1{margin:0 0 8px;font-size:28px}
+.note{margin:0 0 22px;color:#626b78;line-height:1.7}
+.status{display:flex;justify-content:space-between;gap:15px;font-weight:bold;margin-bottom:14px}
+.chapter{font-size:14px;color:#5d6b80;margin-bottom:8px}
+.question{font-size:21px;line-height:1.65;margin:0 0 20px}
+.choices{display:grid;gap:12px}
+.choice{width:100%;text-align:left;border:2px solid #d8dde6;background:#fff;border-radius:10px;padding:15px 16px;font-size:16px;line-height:1.5;cursor:pointer}
+.choice:hover:not(:disabled){background:#f6f8fb;border-color:#7185a6}
+.choice.correct{background:#e9f7ed;border-color:#2d8a49}
+.choice.wrong{background:#fceced;border-color:#bd4545}
+.choice:disabled{cursor:default}
+.feedback{display:none;margin-top:18px;padding:14px 16px;border-radius:10px;background:#f5f6f8;line-height:1.6}
+.feedback.show{display:block}
+.feedback strong{display:block;margin-bottom:4px}
+.actions{display:flex;justify-content:flex-end;margin-top:18px}
+.primary{border:0;border-radius:10px;padding:13px 22px;background:#2e4f80;color:#fff;font-size:16px;font-weight:bold;cursor:pointer}
+#nextBtn{display:none}
+.center{text-align:center}
+.big-score{font-size:48px;font-weight:bold;margin:20px 0 28px}
+@media(max-width:600px){.card{padding:20px}h1{font-size:23px}.question{font-size:18px}}
+</style>
+</head>
+<body>
+<main>
+<div class="card">
+<section id="start" class="center">
+<h1>Chapter2 4択クイズ</h1>
+<p class="note">Chapter2の問題を順番に出題します。<br>選択肢をクリックすると、その場で正解と解説を表示します。</p>
+<button class="primary" id="startBtn">クイズを始める</button>
+</section>
+
+<section id="quiz" hidden>
+<div class="status">
+<span id="progress"></span>
+<span id="score"></span>
+</div>
+<div class="chapter">Chapter2</div>
+<p id="question" class="question"></p>
+<div id="choices" class="choices"></div>
+<div id="feedback" class="feedback"></div>
+<div class="actions"><button class="primary" id="nextBtn">次の問題</button></div>
+</section>
+
+<section id="result" class="center" hidden>
+<h1>結果</h1>
+<div id="finalScore" class="big-score"></div>
+<button class="primary" id="restartBtn">もう一度</button>
+</section>
+</div>
+</main>
+
+<script>
+const questions=[{"q": "本演習で新しいASP.NET Core MVCプロジェクトを作成する際に選ぶテンプレートはどれですか？", "choices": ["ASP.NET Core Web API", "ASP.NET Core Webアプリ（Razor Pages）", "ASP.NET Core Webアプリ（Model-View-Controller）", "空のASP.NET Coreプロジェクト"], "a": 2, "e": "MVCを学習するため、Model-View-Controllerを含むテンプレートを選びます。"}, {"q": "Visual Studioで「プロパティウィンドウ」を表示するショートカットキーはどれですか？", "choices": ["F2", "F4", "F5", "F12"], "a": 1, "e": "プロパティウィンドウはF4で表示します。"}, {"q": "プロジェクト作成時、「ソリューションとプロジェクトを同じディレクトリに配置する」の設定はどうしますか？", "choices": ["必ずチェックを入れる", "チェックは付けない", "プロジェクト名が短い時だけチェックする", "どちらでもよい"], "a": 1, "e": "資料ではチェックを付けない設定です。"}, {"q": "プログラムを「デバッグなしで実行」するショートカットキーはどれですか？", "choices": ["F5", "Ctrl + F5", "Shift + F5", "Alt + F5"], "a": 1, "e": "デバッグなしで実行はCtrl+F5です。"}, {"q": "コントローラーのクラス名に関するルールとして正しいものはどれですか？", "choices": ["自由に決めてよい", "必ず「Controller」で終わらなければならない", "先頭に「Controller」を付ける", "クラス名に「MVC」を含める"], "a": 1, "e": "コントローラークラス名は末尾がControllerで終わります。"}, {"q": "クラス名が「HelloController」の場合、ASP.NET Coreで認識されるコントローラー名はどれですか？", "choices": ["HelloController", "Controller", "Hello", "Hello_MVC"], "a": 2, "e": "接尾辞Controllerを除いたHelloがコントローラー名です。"}, {"q": "クライアントからのリクエストを処理するコントローラー内のpublicメソッドを何と呼びますか？", "choices": ["メインメソッド", "アクションメソッド", "ハンドラメソッド", "ルーティングメソッド"], "a": 1, "e": "リクエストを処理するpublicメソッドはアクションメソッドです。"}, {"q": "URLでアクション名が省略された場合、一般的に実行されるメソッド名はどれですか？", "choices": ["Start", "Main", "Index", "Default"], "a": 2, "e": "一般にIndexが既定のアクションです。"}, {"q": "URLでコントローラー名やアクション名を指定する際の大文字・小文字について正しい説明はどれですか？", "choices": ["厳密に区別する", "区別しない", "先頭文字だけ大文字にする", "すべて大文字にする"], "a": 1, "e": "通常は大文字・小文字を区別しません。"}, {"q": "アクションメソッドの結果をASP.NET Coreへ通知するための戻り値の型はどれですか？", "choices": ["string", "void", "IActionResult", "WebResponse"], "a": 2, "e": "アクション結果はIActionResultで返します。"}, {"q": "Visual Studioで定型的なコードの断片を簡単に挿入する機能は何ですか？", "choices": ["スクリプト", "テンプレート", "スニペット", "マクロ"], "a": 2, "e": "定型的なコード断片はコードスニペットです。"}, {"q": "リクエストURLに応じて実際の処理コードを決定する仕組みを何と呼びますか？", "choices": ["スキャフォールディング", "バインディング", "ルーティング", "レンダリング"], "a": 2, "e": "URLと処理を結び付ける仕組みはルーティングです。"}, {"q": "ルーティングのデフォルト設定を記述するファイルはどれですか？", "choices": ["Index.cshtml", "Program.cs", "appsettings.json", "HelloController.cs"], "a": 1, "e": "Program.cs内のMapControllerRouteで設定します。"}, {"q": "ルーティングパターン {controller=Home}/{action=Index}/{id?} の「?」は何を表しますか？", "choices": ["必須項目", "省略可能", "数値のみ", "暗号化"], "a": 1, "e": "?はそのパラメーターが省略可能であることを示します。"}, {"q": "Razorとは何ですか？", "choices": ["データベース操作用の専用言語", ".NETベースのコードをWebページに埋め込むためのマークアップ構文", "サーバー起動コマンド", "画像圧縮ツール"], "a": 1, "e": "Razorは.cshtmlでC#コードをWebページに埋め込む構文です。"}, {"q": "Razor構文でHTMLからC#コードに移行するための記号はどれですか？", "choices": ["#", "$", "@", "&"], "a": 2, "e": "Razorでは@記号でC#コードへ移行します。"}, {"q": "「明示的なRazor式」の記述方法として正しいものはどれですか？", "choices": ["@DateTime.Now", "@(DateTime.Now)", "#{DateTime.Now}", "DateTime.Now"], "a": 1, "e": "@と括弧で囲んだ形が明示的な式です。"}, {"q": "ViewBagの実体は何ですか？", "choices": ["静的型付け変数", "動的型付け変数（ダイナミックオブジェクト）", "データベースのテーブル", "テキストファイル"], "a": 1, "e": "ViewBagは動的型付けのオブジェクトです。"}, {"q": "基本的なコード構造やファイルを自動生成するプロセスを何と呼びますか？", "choices": ["コンパイル", "デバッグ", "スキャフォールディング", "ビルド"], "a": 2, "e": "基本構造を自動生成する仕組みはスキャフォールディングです。"}, {"q": "Razorテンプレート内でViewBag.Messageの値を表示する正しい記述はどれですか？", "choices": ["ViewBag.Message", "@ViewBag.Message", "#ViewBag.Message", "{ViewBag.Message}"], "a": 1, "e": "Razorでは@を付けて値を埋め込みます。"}, {"q": "MVCモデルにおけるModelの説明として最も適切なものはどれですか？", "choices": ["ユーザーインターフェースのデザインを担当する", "ユーザー入力を受け取り、アクションを決定する", "データベースアクセスや業務ルールなどのビジネスロジック全般を担う", "ブラウザ表示用のHTMLを生成する"], "a": 2, "e": "Modelはデータとビジネスロジックを担当します。"}, {"q": "Entity Framework Coreの説明として正しいものはどれですか？", "choices": ["SQLを直接書かずにデータベース操作を行うためのO/Rマッパー", "HTMLレンダリングを高速化するツール", "クライアント側で状態管理を行うライブラリ", "セキュリティ認証を管理するフレームワーク"], "a": 0, "e": "EF CoreはO/Rマッパーです。"}, {"q": "Entity Framework Coreで、テーブルの構造を表すクラスを何と呼びますか？", "choices": ["コントローラー", "コンテキスト", "ビュー", "エンティティ"], "a": 3, "e": "テーブル構造を表すクラスはエンティティです。"}, {"q": "エンティティクラス名とテーブル名の一般的な関係はどれですか？", "choices": ["クラス名が複数形、テーブル名が単数形", "クラス名が単数形、テーブル名が複数形", "必ず同じ名前", "クラス名にTableを付ける"], "a": 1, "e": "例としてBookクラスはBooksテーブルに対応します。"}, {"q": "Entity Framework Coreで主キーとして自動認識されるプロパティ名はどれですか？", "choices": ["Key または <クラス名>Key", "Pk または <クラス名>Pk", "Id または <クラス名>Id", "Main または <クラス名>Main"], "a": 2, "e": "Idまたはエンティティ名+Idが主キーとして認識されます。"}, {"q": "DbContextを継承したコンテキストクラスの主な役割は何ですか？", "choices": ["アプリケーションとデータベースの橋渡し", "HTMLフォームの入力バリデーション", "セッション情報の保持", "URLルーティングの決定"], "a": 0, "e": "コンテキストはアプリケーションとDBの橋渡しです。"}, {"q": "public DbSet<Book> Books { get; set; } におけるBooksは何を表しますか？", "choices": ["特定の1行のデータ", "データベース上のテーブル全体", "接続文字列", "主キー制約"], "a": 1, "e": "DbSet<T>はテーブル全体を表します。"}, {"q": "データベースの接続情報を記述するファイルはどれですか？", "choices": ["Program.cs", "MyContext.cs", "appsettings.json", "Book.cs"], "a": 2, "e": "接続文字列はappsettings.jsonに記述します。"}, {"q": "Windows認証を使用してデータベースに接続することを示す設定はどれですか？", "choices": ["MultipleActiveResultSets=True", "Trusted_Connection=True", "TrustServerCertificate=true", "Database=BookDB"], "a": 1, "e": "Trusted_Connection=TrueがWindows認証を示します。"}, {"q": "コンテキストと接続文字列を結び付け、アプリに登録する処理を記述する場所はどこですか？", "choices": ["Modelsフォルダ内の各エンティティ", "appsettings.jsonのLoggingセクション", "Program.cs", "ビューの.cshtml"], "a": 2, "e": "サービス登録はProgram.csに記述します。"}, {"q": "データベースのマイグレーションとは何ですか？", "choices": ["バックアップを外部メディアへ移すこと", "データベースのスキーマを変更・管理すること", "全データをCSVに出力すること", "全データを別サーバーへ移すこと"], "a": 1, "e": "マイグレーションはスキーマ変更を管理する仕組みです。"}, {"q": "新しいマイグレーションファイルを作成するコマンドはどれですか？", "choices": ["Update-Database", "Create-Migration", "Add-Migration <名前>", "New-DatabaseStructure"], "a": 2, "e": "Add-Migration <名前>で作成します。"}, {"q": "作成したマイグレーションを実際にデータベースへ適用するコマンドはどれですか？", "choices": ["Update-Database", "Apply-Migration", "Save-Changes", "Build-Database"], "a": 0, "e": "Update-Databaseで反映します。"}, {"q": "Microsoft SQL Server Management Studio（SSMS）の主な用途は何ですか？", "choices": ["C#ソースコードのデバッグ", "サーバー上の静的画像管理", "SQL Serverのデータベース管理やクエリ実行", "Webアプリのルーティングテスト"], "a": 2, "e": "SSMSはSQL Server用の管理ツールです。"}, {"q": "依存性注入（DI）の説明として正しいものはどれですか？", "choices": ["クラスが必要とする依存関係を外部から提供する設計パターン", "全データを別テーブルへ強制注入すること", "ウイルスを検出して排除すること", "HTML内にSQLを直接書き込むこと"], "a": 0, "e": "DIは必要な依存関係を外部から注入します。"}, {"q": "DIで受け取ったコンテキストを保持する一般的なプライベートフィールド名はどれですか？", "choices": ["context", "db_context", "_db または _context", "my_database"], "a": 2, "e": "一般に_dbや_contextが使われます。"}, {"q": "Booksテーブルの全レコードを取得する正しい記述はどれですか？", "choices": ["var books = _db.Books;", "var books = _db.SelectAll();", "var books = _db.GetTable(\"Books\");", "var books = _db.Fetch(Book);"], "a": 0, "e": "DbSetである_db.Booksへアクセスします。"}, {"q": "ビューにおける@modelディレクティブの役割は何ですか？", "choices": ["新しいテーブルを作成する", "ビューが受け取るモデルの型を宣言する", "ブラウザのタイトルを設定する", "CSSを読み込む"], "a": 1, "e": "@modelはビューが受け取る型を宣言します。"}, {"q": "一覧画面で@model IEnumerable<...>と宣言する理由は何ですか？", "choices": ["1件しか登録できないようにする", "暗号化して表示する", "複数オブジェクトを列挙・繰り返し処理できるようにする", "型を動的に変更する"], "a": 2, "e": "IEnumerableは複数要素の列挙に使います。"}, {"q": "モデルに含まれる複数データを繰り返し出力する構文はどれですか？", "choices": ["@if (var item in Model)", "@for (int i=0; i<10; i++)", "@foreach (var book in Model)", "@while (Model.Read())"], "a": 2, "e": "複数データの繰り返しには@foreachを使います。"}];
+let current=0, correct=0, answered=false;
+const start=document.getElementById("start");
+const quiz=document.getElementById("quiz");
+const result=document.getElementById("result");
+const progress=document.getElementById("progress");
+const score=document.getElementById("score");
+const question=document.getElementById("question");
+const choices=document.getElementById("choices");
+const feedback=document.getElementById("feedback");
+const nextBtn=document.getElementById("nextBtn");
+
+function begin(){
+  current=0; correct=0; answered=false;
+  start.hidden=true; result.hidden=true; quiz.hidden=false;
+  showQuestion();
+}
+function showQuestion(){
+  answered=false;
+  const item=questions[current];
+  progress.textContent=`問題 ${current+1} / ${questions.length}`;
+  score.textContent=`正解数 ${correct} / ${current}`;
+  question.textContent=item.q;
+  choices.innerHTML="";
+  feedback.className="feedback";
+  feedback.innerHTML="";
+  nextBtn.style.display="none";
+  item.choices.forEach((text,index)=>{
+    const btn=document.createElement("button");
+    btn.className="choice";
+    btn.textContent=`${String.fromCharCode(65+index)}. ${text}`;
+    btn.onclick=()=>checkAnswer(index,btn);
+    choices.appendChild(btn);
+  });
+}
+function checkAnswer(index,selected){
+  if(answered)return;
+  answered=true;
+  const item=questions[current];
+  const buttons=[...document.querySelectorAll(".choice")];
+  buttons.forEach(b=>b.disabled=true);
+  if(index===item.a){
+    correct++;
+    selected.classList.add("correct");
+    feedback.innerHTML=`<strong>正解です。</strong>${item.e}`;
+  }else{
+    selected.classList.add("wrong");
+    buttons[item.a].classList.add("correct");
+    feedback.innerHTML=`<strong>不正解です。正解は ${String.fromCharCode(65+item.a)} です。</strong>${item.e}`;
+  }
+  score.textContent=`正解数 ${correct} / ${current+1}`;
+  feedback.className="feedback show";
+  nextBtn.textContent=current===questions.length-1?"結果を見る":"次の問題";
+  nextBtn.style.display="inline-block";
+}
+function next(){
+  current++;
+  if(current>=questions.length){
+    quiz.hidden=true;
+    result.hidden=false;
+    document.getElementById("finalScore").textContent=`${correct} / ${questions.length}`;
+  }else showQuestion();
+}
+document.getElementById("startBtn").onclick=begin;
+document.getElementById("restartBtn").onclick=begin;
+nextBtn.onclick=next;
+</script>
+</body>
+</html>

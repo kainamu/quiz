@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chapter4 4択クイズ</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f2f4f8;color:#20242b;font-family:"Yu Gothic","Meiryo",sans-serif}
+main{width:min(860px,calc(100% - 28px));margin:32px auto}
+.card{background:#fff;border:1px solid #d9dee7;border-radius:14px;padding:28px;box-shadow:0 8px 24px rgba(0,0,0,.08)}
+h1{margin:0 0 8px;font-size:28px}
+.note{margin:0 0 22px;color:#626b78;line-height:1.7}
+.status{display:flex;justify-content:space-between;gap:15px;font-weight:bold;margin-bottom:14px}
+.chapter{font-size:14px;color:#5d6b80;margin-bottom:8px}
+.question{font-size:21px;line-height:1.65;margin:0 0 20px}
+.choices{display:grid;gap:12px}
+.choice{width:100%;text-align:left;border:2px solid #d8dde6;background:#fff;border-radius:10px;padding:15px 16px;font-size:16px;line-height:1.5;cursor:pointer}
+.choice:hover:not(:disabled){background:#f6f8fb;border-color:#7185a6}
+.choice.correct{background:#e9f7ed;border-color:#2d8a49}
+.choice.wrong{background:#fceced;border-color:#bd4545}
+.choice:disabled{cursor:default}
+.feedback{display:none;margin-top:18px;padding:14px 16px;border-radius:10px;background:#f5f6f8;line-height:1.6}
+.feedback.show{display:block}
+.feedback strong{display:block;margin-bottom:4px}
+.actions{display:flex;justify-content:flex-end;margin-top:18px}
+.primary{border:0;border-radius:10px;padding:13px 22px;background:#2e4f80;color:#fff;font-size:16px;font-weight:bold;cursor:pointer}
+#nextBtn{display:none}
+.center{text-align:center}
+.big-score{font-size:48px;font-weight:bold;margin:20px 0 28px}
+@media(max-width:600px){.card{padding:20px}h1{font-size:23px}.question{font-size:18px}}
+</style>
+</head>
+<body>
+<main>
+<div class="card">
+<section id="start" class="center">
+<h1>Chapter4 4択クイズ</h1>
+<p class="note">Chapter4の問題を順番に出題します。<br>選択肢をクリックすると、その場で正解と解説を表示します。</p>
+<button class="primary" id="startBtn">クイズを始める</button>
+</section>
+
+<section id="quiz" hidden>
+<div class="status">
+<span id="progress"></span>
+<span id="score"></span>
+</div>
+<div class="chapter">Chapter4</div>
+<p id="question" class="question"></p>
+<div id="choices" class="choices"></div>
+<div id="feedback" class="feedback"></div>
+<div class="actions"><button class="primary" id="nextBtn">次の問題</button></div>
+</section>
+
+<section id="result" class="center" hidden>
+<h1>結果</h1>
+<div id="finalScore" class="big-score"></div>
+<button class="primary" id="restartBtn">もう一度</button>
+</section>
+</div>
+</main>
+
+<script>
+const questions=[{"q": "RazorテンプレートでC#の式をHTMLに埋め込む基本記号はどれですか？", "choices": ["$", "#", "@", "&"], "a": 2, "e": "Razorの基本記号は@です。"}, {"q": "計算式の範囲を明確にする明示的なRazor式はどれですか？", "choices": ["@{ Model.Price * 1.1 }", "@(Model.Price * 1.1)", "@[Model.Price * 1.1]", "@* Model.Price * 1.1 *@"], "a": 1, "e": "明示的な式は@( ... )です。"}, {"q": "<div hidden=\"@false\">のように属性値へfalseやnullが指定された場合、どうなりますか？", "choices": ["hidden=\"false\"と出力される", "hidden=\"hidden\"と出力される", "属性そのものが削除される", "エラーになる"], "a": 2, "e": "falseやnullでは属性自体が出力されません。"}, {"q": "複数のC#文を記述するRazorコードブロックはどれですか？", "choices": ["@(...)", "@[ ... ]", "@{ ... }", "@* ... *@"], "a": 2, "e": "コードブロックは@{ ... }です。"}, {"q": "コードブロック内のHTMLタグを自動的に静的コンテンツとして扱う仕組みを何と呼びますか？", "choices": ["暗黙の移行", "自動レンダリング", "タグヘルパー", "ダイナミックキャスト"], "a": 0, "e": "これを暗黙の移行と呼びます。"}, {"q": "コードブロック内で、HTMLタグを使わず1行をテキストとして出力する際の行頭記号はどれですか？", "choices": ["@:", "@#", "@//", "@text"], "a": 0, "e": "1行テキストには@:を使います。"}, {"q": "ブラウザへ送信されないRazorのサーバー側コメントはどれですか？", "choices": ["<!-- ... -->", "// ...", "/* ... */", "@* ... *@"], "a": 3, "e": "Razorのサーバーコメントは@* ... *@です。"}, {"q": "@modelや@usingなど、Razorエンジンに対する命令を総称して何と呼びますか？", "choices": ["ステートメント", "ディレクティブ", "ヘルパー", "アトリビュート"], "a": 1, "e": "Razorへの命令はディレクティブです。"}, {"q": "Tag Helperの説明として正しいものはどれですか？", "choices": ["@Html.Label()の形式で記述する", "<label asp-for=\"Title\">のようにHTML属性形式で記述する", "JavaScriptライブラリである", "ブラウザ上で直接動作する"], "a": 1, "e": "Tag Helperはasp-で始まる属性をHTMLタグへ追加します。"}, {"q": "@Html.で始まるメソッド呼び出し形式の仕組みを何と呼びますか？", "choices": ["HTMLヘルパー", "タグヘルパー", "ビューコンポーネント", "アクションフィルター"], "a": 0, "e": "@Html.xxx形式はHTMLヘルパーです。"}, {"q": "モデルのプロパティを通貨形式で表示するための属性はどれですか？", "choices": ["[DataType(DataType.Date)]", "[DataType(DataType.Text)]", "[DataType(DataType.Currency)]", "[DataType(DataType.Url)]"], "a": 2, "e": "Currencyを指定します。"}, {"q": "Booksコントローラー内だけで有効な自作EditorTemplateの配置先はどれですか？", "choices": ["/Views/Shared/EditorTemplates", "/Views/Books/EditorTemplates", "/Models/Templates", "/Controllers/Books/Templates"], "a": 1, "e": "特定コントローラー用はViews/Books/EditorTemplatesです。"}, {"q": "HTMLヘルパーとして作成するメソッドの一般的な実体は何ですか？", "choices": ["staticメソッド", "インスタンスメソッド", "プライベートフィールド", "コンストラクタ"], "a": 0, "e": "HTMLヘルパーは一般にstaticメソッドです。"}, {"q": "HTMLヘルパーを拡張メソッドとして定義する際、第1引数に付けるキーワードはどれですか？", "choices": ["base", "this", "new", "out"], "a": 1, "e": "第1引数へthisを付けます。"}, {"q": "HTMLとして安全にレンダリングされる値を返すための戻り値型はどれですか？", "choices": ["string", "void", "IHtmlContent", "Task"], "a": 2, "e": "IHtmlContentを返します。"}, {"q": "C#コード内でHTMLタグを安全かつ柔軟に生成するクラスはどれですか？", "choices": ["HtmlGenerator", "TagBuilder", "NodeMaker", "ElementCreator"], "a": 1, "e": "TagBuilderでタグや属性を組み立てます。"}, {"q": "カスタムTag Helperのクラス名に付ける一般的な接尾辞はどれですか？", "choices": ["Helper", "Tag", "TagHelper", "Component"], "a": 2, "e": "例：CoverTagHelperのようにTagHelperを付けます。"}, {"q": "各ビューが処理される前に読み込まれ、共通レイアウトなどを設定するファイルはどれですか？", "choices": ["_Layout.cshtml", "_ViewImports.cshtml", "_ViewStart.cshtml", "appsettings.json"], "a": 2, "e": "_ViewStart.cshtmlは各ビューより前に読み込まれます。"}, {"q": "レイアウト内で各ページのメインコンテンツが埋め込まれる場所を指定するメソッドはどれですか？", "choices": ["@RenderSection()", "@RenderBody()", "@Html.Partial()", "@Inject()"], "a": 1, "e": "@RenderBody()がメインコンテンツ領域です。"}, {"q": "複数ページで共通利用する部分ビューを呼び出すTag Helperはどれですか？", "choices": ["<layout>", "<section>", "<partial>", "<component>"], "a": 2, "e": "<partial name=\"_FileName\" />で部分ビューを呼び出します。"}];
+let current=0, correct=0, answered=false;
+const start=document.getElementById("start");
+const quiz=document.getElementById("quiz");
+const result=document.getElementById("result");
+const progress=document.getElementById("progress");
+const score=document.getElementById("score");
+const question=document.getElementById("question");
+const choices=document.getElementById("choices");
+const feedback=document.getElementById("feedback");
+const nextBtn=document.getElementById("nextBtn");
+
+function begin(){
+  current=0; correct=0; answered=false;
+  start.hidden=true; result.hidden=true; quiz.hidden=false;
+  showQuestion();
+}
+function showQuestion(){
+  answered=false;
+  const item=questions[current];
+  progress.textContent=`問題 ${current+1} / ${questions.length}`;
+  score.textContent=`正解数 ${correct} / ${current}`;
+  question.textContent=item.q;
+  choices.innerHTML="";
+  feedback.className="feedback";
+  feedback.innerHTML="";
+  nextBtn.style.display="none";
+  item.choices.forEach((text,index)=>{
+    const btn=document.createElement("button");
+    btn.className="choice";
+    btn.textContent=`${String.fromCharCode(65+index)}. ${text}`;
+    btn.onclick=()=>checkAnswer(index,btn);
+    choices.appendChild(btn);
+  });
+}
+function checkAnswer(index,selected){
+  if(answered)return;
+  answered=true;
+  const item=questions[current];
+  const buttons=[...document.querySelectorAll(".choice")];
+  buttons.forEach(b=>b.disabled=true);
+  if(index===item.a){
+    correct++;
+    selected.classList.add("correct");
+    feedback.innerHTML=`<strong>正解です。</strong>${item.e}`;
+  }else{
+    selected.classList.add("wrong");
+    buttons[item.a].classList.add("correct");
+    feedback.innerHTML=`<strong>不正解です。正解は ${String.fromCharCode(65+item.a)} です。</strong>${item.e}`;
+  }
+  score.textContent=`正解数 ${correct} / ${current+1}`;
+  feedback.className="feedback show";
+  nextBtn.textContent=current===questions.length-1?"結果を見る":"次の問題";
+  nextBtn.style.display="inline-block";
+}
+function next(){
+  current++;
+  if(current>=questions.length){
+    quiz.hidden=true;
+    result.hidden=false;
+    document.getElementById("finalScore").textContent=`${correct} / ${questions.length}`;
+  }else showQuestion();
+}
+document.getElementById("startBtn").onclick=begin;
+document.getElementById("restartBtn").onclick=begin;
+nextBtn.onclick=next;
+</script>
+</body>
+</html>
